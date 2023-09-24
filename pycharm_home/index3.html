@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>함수 미분 계산기</title>
+</head>
+<body>
+    <h1>함수 미분 계산기</h1>
+
+    <label for="func1">첫 번째 함수 선택:</label>
+    <select id="func1">
+        <option value="x">x</option>
+        <option value="x**2">x^2</option>
+        <option value="x**3">x^3</option>
+    </select>
+
+    <label for="func2">두 번째 함수 선택:</label>
+    <select id="func2">
+        <option value="cos(x)">cos(x)</option>
+        <option value="sin(x)">sin(x)</option>
+        <option value="exp(x)">exp(x)</option>
+    </select>
+
+    <label for="func3">세 번째 함수 선택:</label>
+    <select id="func3">
+        <option value="cos(x)">cos(x)</option>
+        <option value="sin(x)">sin(x)</option>
+        <option value="exp(x)">exp(x)</option>
+    </select>
+
+    <button onclick="calculateDerivative()">미분 계산</button>
+
+    <h2>미분 결과:</h2>
+    <div id="result"></div>
+
+    <h2>미분 결과 그래프:</h2>
+    <div id="plot"></div>
+    <div id="equation"></div>
+    <script>
+        function calculateDerivative() {
+            var func1 = document.getElementById("func1").value;
+            var func2 = document.getElementById("func2").value;
+            var func3 = document.getElementById("func3").value;
+
+            // 서버로 선택한 함수들을 전송하고 미분을 계산하도록 요청
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/', true); // 같은 URL로 변경
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    console.log(response.result)
+                    document.getElementById("result").innerText = response.result;
+                    document.getElementById('equation').value =response.result;
+                    plotGraph(response.result); // 미분 결과로 그래프 그리기
+                }
+            };
+
+            var data = {
+                func1: func1,
+                func2: func2,
+                func3: func3,
+            };
+            xhr.send(JSON.stringify(data));
+        }
+
+        // 그래프를 그리고 표시하는 함수
+        function plotGraph(equation) {
+            console.log('그래프 그리기')
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/plot', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onreadystatechange = function() {
+                console.log('호출')
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    console.log('성공')
+                    var response = JSON.parse(xhr.responseText);
+                    if (response.image) {
+                        var graphContainer = document.getElementById('plot');
+                        var imgElement = document.createElement('img');
+                        imgElement.src = 'data:image/png;base64,' + response.image;
+                        graphContainer.innerHTML = ''; // 이전 그래프 지우기
+                        graphContainer.appendChild(imgElement);
+                    } else if (response.error) {
+                        console.error('그래프 그리기 오류:', response.error);
+                    }
+                }
+            };
+
+            // 서버로 선택된 수식을 전송
+            xhr.send('equation=' + encodeURIComponent(equation));
+        }
+    </script>
+</body>
+</html>

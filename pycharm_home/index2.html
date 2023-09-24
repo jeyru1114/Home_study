@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>함수 미분 계산기</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+</head>
+<body>
+    <h1>함수 미분 계산기</h1>
+
+    <label for="func1">첫 번째 함수 선택:</label>
+    <select id="func1">
+        <option value="x">x</option>
+        <option value="x**2">x^2</option>
+        <option value="x**3">x^3</option>
+        <option value="x**4">x^4</option>
+        <option value="cos(x)">cos(x)</option>
+        <option value="sin(x)">sin(x)</option>
+        <option value="exp(x)">exp(x)</option>
+    </select>
+
+    <label for="func2">두 번째 함수 선택:</label>
+    <select id="func2">
+       
+        <option value="x">x</option>
+        <option value="x**2">x^2</option>
+        <option value="x**3">x^3</option>
+        <option value="x**4">x^4</option>
+        <option value="cos(x)">cos(x)</option>
+        <option value="sin(x)">sin(x)</option>
+        <option value="exp(x)">exp(x)</option>
+    </select>
+
+    <label for="func3">세 번째 함수 선택:</label>
+    <select id="func3">
+        <option value="x">x</option>
+        <option value="x**2">x^2</option>
+        <option value="x**3">x^3</option>
+        <option value="x**4">x^4</option>
+        <option value="cos(x)">cos(x)</option>
+        <option value="sin(x)">sin(x)</option>
+        <option value="exp(x)">exp(x)</option>
+    </select>
+
+    <button id="calculate-button">랜덤 미분 계산</button>
+
+    <h2>미분 결과:</h2>
+    <div id="result"></div>
+
+    <h2>미분 결과 그래프:</h2>
+    <div id="plot"></div>
+    <div id="equation"></div>
+    <script>
+        var numbers=[]
+        for(var i =0;i<10;i++){
+            numbers.push(''+i)
+        }
+        numbers.push('a')
+        numbers.push('b')
+        numbers.push('c')
+        numbers.push('d')
+        numbers.push('e')
+        numbers.push('f')
+    function color(){
+        var str1='#'
+        for(var i =0;i<6;i++){
+            var idx = parseInt(Math.random()*numbers.length)
+            str1+= numbers[idx]
+        }
+        console.log(str1)
+        return str1;
+    }
+    $(document).ready(function(){
+        function calculateDerivative() {
+            var func1 = $("#func1").val();
+            var func2 = $("#func2").val();
+            var func3 = $("#func3").val();
+
+            // 서버로 선택한 함수들을 전송하고 미분을 계산하도록 요청
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/', true); // 같은 URL로 변경
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    console.log(response.result)
+                    $("#result").text(response.result);
+                    $('#equation').val(response.result);
+                    plotGraph(response.result); // 미분 결과로 그래프 그리기
+                }
+            };
+
+            var data = {
+                func1: func1,
+                func2: func2,
+                func3: func3,
+            };
+            xhr.send(JSON.stringify(data));
+        }
+
+        // 그래프를 그리고 표시하는 함수
+        function plotGraph(equation) {
+            console.log('그래프 그리기')
+            $.ajax({
+                type: 'POST',
+                url: '/plot',
+                data: { equation },
+                dataType: 'json',
+                success: function (response) {
+                    console.log('호출');
+                    if (response.image) {
+                        var graphContainer = $('#plot');
+                        var imgElement = $('<img>');
+                        imgElement.attr('src', 'data:image/png;base64,' + response.image);
+                        graphContainer.empty(); // 이전 그래프 지우기
+                        graphContainer.append(imgElement); // 그래프 이미지 추가
+                    } else if (response.error) {
+                        console.error('그래프 그리기 오류:', response.error);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('AJAX 오류:', error);
+                }
+            });
+        }
+
+
+        function randomOptionAndTriggerEvent(selectId) {
+            var $select = $('#' + selectId); // 해당 <select> 요소 선택
+            var options = $select.find('option'); // 모든 옵션을 가져옴
+            var randomIndex = Math.floor(Math.random() * options.length); // 무작위 인덱스 선택
+
+            // 선택한 옵션을 선택하도록 설정
+            $select.val(options[randomIndex].value);
+            $select.css('color',color())
+            $('#result').css('color',color())
+            $('button').css('background-color',color())
+            // 선택한 옵션에 이벤트 발생 (여기에서는 change 이벤트를 발생시킴)
+            $select.trigger('change');
+        }
+        // 1 초마다 그래프 업데이트
+   function clickCalculateButton() {
+        console.log('호출')
+        var calculateButton = $("#calculate-button");
+        // 각 <select> 요소에 대해 무작위로 옵션 선택 및 이벤트 발생
+        randomOptionAndTriggerEvent('func1');
+        randomOptionAndTriggerEvent('func2');
+        randomOptionAndTriggerEvent('func3');
+        calculateButton.click();
+    }
+    $("button").click(function(){
+        calculateDerivative()
+    })
+
+    // 1 초마다 버튼 클릭
+    setInterval(clickCalculateButton, 3000);
+})
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LaTeX 수식 생성기</title>
+
+</head>
+<body>
+    <h1>LaTeX 수식 생성기</h1>
+    <form method="POST">
+        <label for="num_equations">생성할 2차 방정식 수:</label>
+        <input type="number" id="num_equations" name="num_equations" required>
+        <input type="submit" value="생성">
+    </form>
+
+    {% if equations %}
+    <h2>생성된 2차 방정식들:</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>2차 방정식 (LaTeX)</th>
+                <th>그래프 그리기</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for equation in equations %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>
+                    <span class="latex-render">{{ equation }}</span>
+                </td>
+                <td>
+                    <button class="plot-button" data-equation="{{ equation }}">그래프 그리기</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+    이미지야 나와라
+    <div id="plot">
+
+    </div>
+    <script type="text/javascript">
+        // 그래프 그리기 버튼을 클릭할 때 이벤트 핸들러를 등록합니다.
+        var plotButtons = document.querySelectorAll('.plot-button');
+        plotButtons.forEach(function(button) {
+            button.addEventListener('click', function() {
+                var equation = this.getAttribute('data-equation');
+                plotGraph(equation);
+            });
+        });
+
+                // 그래프를 그리고 표시하는 함수
+        function plotGraph(equation) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/plot', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    console.log(response)
+                    if (response.image) {
+                        var graphContainer = document.getElementById('plot');
+                        console.log(graphContainer)
+                        var imgElement = document.createElement('img');
+                        console.log(imgElement)
+                        imgElement.src = 'data:image/png;base64,' + response.image;
+                        graphContainer.innerHTML = ''; // 이전 그래프 지우기
+                        graphContainer.appendChild(imgElement);
+                    } else if (response.error) {
+                        console.error('그래프 그리기 오류:', response.error);
+                    }
+                }
+            };
+
+            // 서버로 선택된 수식을 전송
+            xhr.send('equation=' + encodeURIComponent(equation));
+        }
+    </script>
+</body>
