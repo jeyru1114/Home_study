@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+    <script>
+      function generateCombinations(variables, k) {
+        const result = [];
+
+        function backtrack(startIndex, currentCombo) {
+          if (currentCombo.length === k) {
+            result.push([...currentCombo]);
+            return;
+          }
+
+          for (let i = startIndex; i < variables.length; i++) {
+            currentCombo.push(variables[i]);
+            backtrack(i + 1, currentCombo);
+            currentCombo.pop();
+          }
+        }
+
+        backtrack(0, []);
+        return result;
+      }
+
+      $(document).ready(function () {
+        const funcs = ["sin", "cos", "exp", "tan"];
+        // const mathExpression =
+        //   "x**2 + 2*x*t*cos(x*t)+ r**3*exp(x) + q**2*cos(x)*sin(x)*r**2 + cos(t)*sin(t)*v**2*cos(r)*tan(x)";
+        var difference_set
+        var expression
+        var uniqueVariables
+        
+      
+    // 결과 업데이트 함수
+    function updateResult(selectedItems) {
+      console.log('updateResult 호출')
+      // 'q'와 'v' 데이터를 나타내는 바(bar)를 생성
+      const resultDiv = $('#result');
+      resultDiv.empty();
+      console.log('selectedItems',selectedItems)
+      for (const item of selectedItems) {
+        const barDiv = $('<input type=range></input>');
+        barDiv.text(item);
+        resultDiv.append(barDiv);
+      }
+    }
+    function updateSelectOption(insertPosition, selectedItems) {
+    // select option 에 추가할 항목 
+    for (var i = 0; i < selectedItems.length; i++) {
+          var variable = selectedItems[i].toString();
+          //console.log('v:',variable)
+          insertPosition.append(
+            '<option value="' + variable + '">' + variable + "</option>"
+          );
+        }
+      }
+      function updateSelectOption2(insertPosition, selectedItems) {
+        insertPosition.empty()
+    // select option 에 추가할 항목
+    for (var i of selectedItems) {
+          insertPosition.append(
+            '<option value="' + i + '">' + i + "</option>"
+          );
+        }
+      }
+
+      $("#expression").change(function () {
+        expression = $(this).val()
+        // 정규 표현식으로 영문자(소문자 . 대문자 추출 )
+        const variables = expression.match(/[a-zA-Z]+/g);
+
+        // 중복된 문자 제거 
+        const filteredVariables = variables.filter(
+          (variable) => !funcs.includes(variable)
+        );
+        console.log('filter: ',filteredVariables)
+        uniqueVariables = Array.from(new Set(filteredVariables));
+        console.log('unique: ',uniqueVariables)
+        unique_set = new Set(uniqueVariables)
+        combination_list=[]
+        for(var i =1;i<uniqueVariables.length+1;i++){
+          const combinations = generateCombinations(
+            uniqueVariables,
+            i
+          );
+          console.log('a:',combinations)
+          combination_list.push(combinations)
+        }
+        console.log("Possible combinations:", combination_list);
+        combination_list_string=[]
+        for(var i of combination_list){
+          for(var j of i){
+          // console.log('u:',j.join(','))
+          combination_list_string.push(j.join(','))
+        }
+        
+      }
+      updateSelectOption($("#variableSelector"), combination_list_string) ;
+      })
+        $("#variableSelector").change(function () {
+          var variable = $(this).val();
+          expression = $('#expression').val();
+          console.log(variable, expression)
+          array_variable = variable.split(",")
+          console.log(array_variable)
+          difference_set =  uniqueVariables.filter(item => !array_variable.includes(item));
+          console.log('difference_set',difference_set)
+          updateSelectOption2($("#outputVariable") ,difference_set);
+          console.log('d_s',difference_set)
+        })
+        var partial_derivative_variable
+        var outputVariable
+        var input_result = []; // input 결과 배열 초기화
+        $("#outputVariable").change(function () {
+          const difference_set_final =  difference_set.filter(item => !$(this).val().includes(item));
+          console.log('difference_set_final',difference_set_final)
+
+          updateResult(difference_set_final); // 결과 업데이트
+          partial_derivative_variable= $('#variableSelector').val()
+          console.log('partial_derivative_variable',partial_derivative_variable)
+          outputVariable= $('#outputVariable').val()
+          console.log('outputVariable',outputVariable)
+          
+
+          var input_ranges = $('[type=range]');
+
+          input_ranges.each(function (idx, data) {
+            $(this).change(function (e) {
+              console.log('input 이벤트');
+              const inputValue = $(this).val();
+              input_result[idx] = inputValue; // 해당 index의 값 갱신
+              console.log('input_result', input_result);
+            });
+          });
+        });
+          $("button").click(function(e){
+            $.ajax({
+            url: "/sympy",
+            contentType: "application/json", //전송 데이터 타입을  JSON으로 설정
+            dataType: "json", //응답 데이터 타입을 JSON으로 설정
+            data: JSON.stringify({ expression, partial_derivative_variable, outputVariable ,input:input_result}),
+            type: "POST",
+            success: function (response) {
+              list = response.result;
+              console.log(list)
+              plotGraph()
+            },
+            error: function (e) {
+              console.log(e);
+            },
+          });
+          })
+          // 그래프를 그리고 표시하는 함수
+        function plotGraph() {
+            console.log('그래프 그리기')
+            $.ajax({
+                type: 'POST',
+                url: '/plot',
+                dataType: 'json',
+                success: function (response) {
+                    console.log('호출');
+                    if (response.image) {
+                        var graphContainer = $('#plot');
+                        var imgElement = $('<img>');
+                        imgElement.attr('src', 'data:image/png;base64,' + response.image);
+                        graphContainer.empty(); // 이전 그래프 지우기
+                        graphContainer.append(imgElement); // 그래프 이미지 추가
+                    } else if (response.error) {
+                        console.error('그래프 그리기 오류:', response.error);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('AJAX 오류:', error);
+                }
+            });
+        }
+
+     
+      });
+    </script>
+  </head>
+  <body>
+    <div>수식
+      <input type="text" id="expression">
+    </div>
+    <div>
+       편미분 하고자 하는 변수
+      <select id="variableSelector"></select>
+    </div>
+    <div>
+      그래프에 출력하고자 하는 변수
+      <select id="outputVariable"></select>
+    </div>
+    <div id="result"></div>
+    <div id="plot"></div>
+    <button>눌러라</button>
+  </body>
+</html>
