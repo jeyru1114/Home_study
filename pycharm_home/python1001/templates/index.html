@@ -1,0 +1,60 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask jQuery Ajax Example</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Fetch a Message with Flask and jQuery Ajax</h1>
+    <form action="" method="POST">
+        <div>
+            <label for="">함수</label>
+            <input type="text" name="f"/>
+        </div>
+        <div>
+            <label for="">좌한</label>
+            <input type="text" name="a"/>
+        </div>
+        <div>
+            <label for="">우한</label>
+            <input type="text" name="b"/>
+        </div>
+         <input type="submit" value="계산" id="calc"/>
+    </form>
+
+    <div id="result"></div>
+    <div id="result_sympy"></div>
+
+    <script>
+       $(document).ready(function () {
+    $('#calc').click(function (event) {
+        event.preventDefault(); // Prevent the form from submitting traditionally
+
+        var a = $("input[name=a]").val();
+        var b = $("input[name=b]").val();
+        var f = $("input[name=f]").val();
+
+        $.ajax({
+            url: '/get_message',
+            type: 'POST',
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify({  a, b,  f }),
+            success: function (data) {
+                console.log(data)
+                $('#result').text(data.result);
+                $('#result_sympy').text(data.result_sympy);
+            },
+            error: function () {
+                alert('An error occurred while sending data to the server.');
+            }
+        });
+    });
+});
+
+    </script>
+</body>
+</html>
